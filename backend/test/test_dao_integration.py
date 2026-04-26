@@ -144,3 +144,109 @@ class TestDAOCreateIntegration:
         
         with pytest.raises(WriteError):
             user_dao.create(user_data2)
+
+
+    # Test Case 8: Valid todo creation
+    def test_create_valid_todo(self, todo_dao):
+        todo_data = {
+            'description': 'Complete assignment 3',
+            'done': False
+        }
+        
+        result = todo_dao.create(todo_data)
+        
+        assert result is not None
+        assert '_id' in result
+        assert result['description'] == 'Complete assignment 3'
+        assert result['done'] == False
+
+    # Test Case 9: Todo without optional done field
+    def test_create_todo_without_done(self, todo_dao):
+        todo_data = {
+            'description': 'Test todo without done status'
+        }
+        
+        result = todo_dao.create(todo_data)
+        
+        assert result is not None
+        assert '_id' in result
+        assert result['description'] == 'Test todo without done status'
+
+    # Test Case 10: Missing required todo field - description
+    def test_create_todo_missing_description(self, todo_dao):
+        todo_data = {
+            'done': True
+        }
+        
+        with pytest.raises(WriteError):
+            todo_dao.create(todo_data)
+
+    # Test Case 11: Wrong data type - description as integer
+    def test_create_todo_wrong_description_type(self, todo_dao):
+        todo_data = {
+            'description': 12345,  # Should be string
+            'done': False
+        }
+        
+        with pytest.raises(WriteError):
+            todo_dao.create(todo_data)
+
+    # Test Case 12: Wrong data type - done as string
+    def test_create_todo_wrong_done_type(self, todo_dao):
+        todo_data = {
+            'description': 'Test wrong done type',
+            'done': 'true'  # Should be boolean
+        }
+        
+        with pytest.raises(WriteError):
+            todo_dao.create(todo_data)
+
+    # Test Case 13: Duplicate unique todo description
+    def test_create_todo_duplicate_description(self, todo_dao):
+        todo_data = {
+            'description': 'Unique todo description',
+            'done': False
+        }
+        
+        # Create first todo successfully
+        result1 = todo_dao.create(todo_data)
+        assert result1 is not None
+        
+        # Try to create second todo with same description
+        todo_data2 = {
+            'description': 'Unique todo description',
+            'done': True
+        }
+        
+        with pytest.raises(WriteError):
+            todo_dao.create(todo_data2)
+
+    # Test Case 14: User with optional tasks field as array
+    def test_create_user_with_tasks_array(self, user_dao):
+        user_data = {
+            'firstName': 'With',
+            'lastName': 'Tasks',
+            'email': 'with.tasks@example.com',
+            'tasks': []
+        }
+        
+        result = user_dao.create(user_data)
+        
+        assert result is not None
+        assert '_id' in result
+        assert result['tasks'] == []
+
+    # Test Case 15: Valid user with extra fields not in validator
+    def test_create_user_with_extra_fields(self, user_dao):
+        user_data = {
+            'firstName': 'Extra',
+            'lastName': 'Fields',
+            'email': 'extra.fields@example.com',
+            'phone': '123-456-7890'  # Not in validator
+        }
+        
+        result = user_dao.create(user_data)
+        
+        assert result is not None
+        assert '_id' in result
+        assert result['phone'] == '123-456-7890'
