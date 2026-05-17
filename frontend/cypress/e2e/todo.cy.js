@@ -1,7 +1,6 @@
 /**
  * PA1417 – Assignment 4: GUI Testing
- * Requirement 8: To-do item management — create (R8UC1), toggle (R8UC2)
- * Author: Shaik Mahammed Sameen
+ * Requirement 8: To-do item management — create (R8UC1), toggle (R8UC2), delete (R8UC3)
  *
  * Prerequisites before running:
  *   1. Start backend:  cd backend && python main.py
@@ -51,6 +50,7 @@ describe('R8 – To-do item management', () => {
         uid = userResp.body._id.$oid
 
         cy.fixture('task.json').then((task) => {
+          // Build raw URL-encoded body so todos array is sent correctly
           const body =
             `title=${encodeURIComponent(task.title)}` +
             `&description=${encodeURIComponent(task.description)}` +
@@ -168,6 +168,46 @@ describe('R8 – To-do item management', () => {
       cy.contains('.todo-item', 'Item stays unchecked')
         .find('.checker')
         .should('have.class', 'unchecked')
+    })
+
+  })
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // R8UC3 – Delete a to-do item
+  // Note: TC-R8UC3-01, 02, 03 reveal a real defect — the DELETE request
+  // succeeds (HTTP 200) but the UI does not re-render because deleteTodo()
+  // in TaskDetail.js calls updateTask() as a value rather than a callback.
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('R8UC3 – Delete a to-do item', () => {
+
+    it('TC-R8UC3-01: removes a todo from the list when the remover is clicked', () => {
+      loginAndOpenTask()
+      addTodo('Delete me')
+      cy.contains('.todo-item', 'Delete me').find('.remover').click()
+      cy.get('.todo-list', { timeout: 6000 })
+        .should('not.contain.text', 'Delete me')
+    })
+
+    it('TC-R8UC3-02: only removes the targeted todo and leaves others intact', () => {
+      loginAndOpenTask()
+      addTodo('Keep me')
+      addTodo('Remove me')
+      cy.contains('.todo-item', 'Remove me').find('.remover').click()
+      cy.get('.todo-list', { timeout: 6000 })
+        .should('not.contain.text', 'Remove me')
+      cy.get('.todo-list').should('contain.text', 'Keep me')
+    })
+
+    it('TC-R8UC3-03: can delete a todo that has been marked as done', () => {
+      loginAndOpenTask()
+      addTodo('Done then deleted')
+      cy.contains('.todo-item', 'Done then deleted').find('.checker').click()
+      cy.contains('.todo-item', 'Done then deleted')
+        .find('.checker').should('have.class', 'checked')
+      cy.contains('.todo-item', 'Done then deleted').find('.remover').click()
+      cy.get('.todo-list', { timeout: 6000 })
+        .should('not.contain.text', 'Done then deleted')
     })
 
   })
